@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FitTrack — Gym Personal Training and Progress Tracking System. Manage workouts, track progress, and achieve your fitness goals." />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>FitTrack — Gym Personal Training & Progress Tracking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════ AUTH SCREENS ═══════════════════ -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-view" class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-logo-wrap">
+          <span class="material-icons-round brand-icon">fitness_center</span>
+        </div>
+        <h1>FitTrack</h1>
+        <p class="auth-subtitle">Your personal training companion</p>
+      </div>
+      <form id="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">mail</span>
+            <input type="email" id="login-email" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">lock</span>
+            <input type="password" id="login-password" placeholder="••••••••" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="login-role">Login as</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">person</span>
+            <select id="login-role">
+              <option value="member">Member</option>
+              <option value="trainer">Trainer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+          Sign In
+          <span class="material-icons-round">arrow_forward</span>
+        </button>
+      </form>
+      <p class="auth-link">Don't have an account? <a href="#" id="show-register">Create one</a></p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-view" class="auth-card hidden">
+      <div class="auth-brand">
+        <div class="brand-logo-wrap">
+          <span class="material-icons-round brand-icon">fitness_center</span>
+        </div>
+        <h1>Join FitTrack</h1>
+        <p class="auth-subtitle">Start your fitness journey today</p>
+      </div>
+      <form id="register-form" autocomplete="off">
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">badge</span>
+            <input type="text" id="reg-name" placeholder="John Doe" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">mail</span>
+            <input type="email" id="reg-email" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">lock</span>
+            <input type="password" id="reg-password" placeholder="Min 8 characters" required minlength="8" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reg-confirm">Confirm Password</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">lock</span>
+            <input type="password" id="reg-confirm" placeholder="••••••••" required minlength="8" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reg-role">Register as</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round input-icon">person</span>
+            <select id="reg-role">
+              <option value="member">Member</option>
+              <option value="trainer">Trainer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="register-btn">
+          Create Account
+          <span class="material-icons-round">arrow_forward</span>
+        </button>
+      </form>
+      <p class="auth-link">Already have an account? <a href="#" id="show-login">Sign in</a></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ APP SHELL ═══════════════════ -->
+  <div id="app-shell" class="app-shell hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <span class="material-icons-round brand-icon">fitness_center</span>
+        <span class="brand-text">FitTrack</span>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="user-pill" id="user-pill">
+          <div class="user-avatar" id="user-avatar">JD</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">John Doe</span>
+            <span class="user-role" id="user-role-label">Member</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" title="Logout">
+          <span class="material-icons-round">logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-area">
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <button class="btn btn-ghost sidebar-toggle" id="sidebar-toggle">
+          <span class="material-icons-round">menu</span>
+        </button>
+        <h2 class="topbar-title" id="topbar-title">Dashboard</h2>
+        <div class="topbar-right">
+          <div class="search-box">
+            <span class="material-icons-round">search</span>
+            <input type="text" placeholder="Search…" id="global-search" />
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT VIEWS -->
+      <section class="content" id="content">
+
+        <!-- ═══ MEMBER DASHBOARD ═══ -->
+        <div id="view-member-dashboard" class="view"></div>
+
+        <!-- ═══ WORKOUT PLANS ═══ -->
+        <div id="view-workout-plans" class="view"></div>
+
+        <!-- ═══ PROGRESS ═══ -->
+        <div id="view-progress" class="view"></div>
+
+        <!-- ═══ PAYMENTS ═══ -->
+        <div id="view-payments" class="view"></div>
+
+        <!-- ═══ PROFILE ═══ -->
+        <div id="view-profile" class="view"></div>
+
+        <!-- ═══ TRAINER DASHBOARD ═══ -->
+        <div id="view-trainer-dashboard" class="view"></div>
+
+        <!-- ═══ TRAINER MEMBERS ═══ -->
+        <div id="view-trainer-members" class="view"></div>
+
+        <!-- ═══ TRAINER PLANS ═══ -->
+        <div id="view-trainer-plans" class="view"></div>
+
+        <!-- ═══ TRAINER PROGRESS ═══ -->
+        <div id="view-trainer-progress" class="view"></div>
+
+        <!-- ═══ ADMIN MEMBERS ═══ -->
+        <div id="view-admin-members" class="view"></div>
+
+        <!-- ═══ ADMIN TRAINERS ═══ -->
+        <div id="view-admin-trainers" class="view"></div>
+
+        <!-- ═══ ADMIN EXERCISES ═══ -->
+        <div id="view-admin-exercises" class="view"></div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- ═══════════════════ MODAL OVERLAY ═══════════════════ -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Title</h3>
+        <button class="btn btn-ghost icon-btn" id="modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ TOAST ═══════════════════ -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
