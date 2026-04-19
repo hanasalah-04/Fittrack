@@ -1,6 +1,4 @@
-================================================================================
-                           FITTRACK GYM SYSTEM
-================================================================================
+> FITTRACK GYM SYSTEM
 
 A full-stack gym management web application designed for Members, Trainers, and 
 Administrators. It features a modern Single-Page Application (SPA) frontend 
