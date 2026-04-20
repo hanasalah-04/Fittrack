@@ -363,11 +363,40 @@ async function renderPayments() {
   };
 }
 
-// ── PROFILE ──
+// ── PROFILE (UPDATED with "My Trainer" section) ──
 async function renderProfile() {
   const v = $('#view-profile');
   setLoading(v);
   const u = await DataService.getUser(APP.user.id) || APP.user;
+
+  // Fetch trainer info if this user is a member and has a trainerId
+  let trainerHtml = '';
+  if (u.role === 'member' && u.trainerId) {
+    const allTrainers = await DataService.getTrainers();
+    const trainer = allTrainers.find(t => t.id === u.trainerId);
+    if (trainer) {
+      trainerHtml = `
+        <div class="card card-padded mt-6">
+          <div class="section-title">👨‍🏫 My Trainer</div>
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--accent-100); color: var(--accent-700); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;">
+              ${initials(trainer.name)}
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 1.2rem;">${trainer.name}</div>
+              <div style="color: var(--gray-500);">${trainer.specialization || 'Fitness Trainer'}</div>
+              ${trainer.phone ? `<div style="margin-top: 4px;"><span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">phone</span> ${trainer.phone}</div>` : ''}
+              ${trainer.email ? `<div><span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">email</span> ${trainer.email}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      trainerHtml = `<div class="card card-padded mt-6">${empty('person_off', 'No trainer assigned', 'Ask an admin to assign a trainer to you')}</div>`;
+    }
+  } else if (u.role === 'member') {
+    trainerHtml = `<div class="card card-padded mt-6">${empty('person_off', 'No trainer yet', 'Your gym will assign a trainer to help you')}</div>`;
+  }
 
   v.innerHTML = `
     <div class="card mb-6">
@@ -395,6 +424,7 @@ async function renderProfile() {
       </div>
       <button class="btn btn-secondary" id="change-pw"><span class="material-icons-round">lock</span> Update Password</button>
     </div>
+    ${trainerHtml}
   `;
   $('#save-prof').onclick = async () => {
     const name = $('#pf-name').value.trim(), email = $('#pf-email').value.trim();
