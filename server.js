@@ -52,9 +52,19 @@ app.post('/api/register', (req, res) => {
   res.json({ success: true, user: safe(user) });
 });
 
-// GET /api/user/:id
+// GET /api/user/:id  (FIXED: includes trainerId for members)
 app.get('/api/user/:id', (req, res) => {
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(Number(req.params.id));
+  const id = Number(req.params.id);
+  const user = db.prepare('SELECT * FROM users WHERE id=?').get(id);
+  if (!user) return res.json(null);
+  
+  // If member, fetch trainerId from members table
+  if (user.role === 'member') {
+    const member = db.prepare('SELECT trainerId FROM members WHERE id=?').get(id);
+    if (member) {
+      user.trainerId = member.trainerId;
+    }
+  }
   res.json(safe(user));
 });
 
