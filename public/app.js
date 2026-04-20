@@ -601,6 +601,7 @@ async function openAssignModal(plan) {
 }
 
 
+async function renderTrainerProgress() {
   const v = $('#view-trainer-progress');
   setLoading(v);
   const allMembers = await DataService.getMembers();
