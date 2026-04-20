@@ -238,16 +238,15 @@ async function renderMyPlans() {
   ]);
   const myPlanIds = myPlanLinks.map(x => x.planId);
   const myPlans   = allPlans.filter(p => myPlanIds.includes(p.id));
-  const otherPlans= allPlans.filter(p => !myPlanIds.includes(p.id));
 
-  // Fetch exercise lists for each plan
+  // Fetch exercise lists for assigned plans only
   const planExMap = {};
-  await Promise.all(allPlans.map(async p => {
+  await Promise.all(myPlans.map(async p => {
     planExMap[p.id] = await DataService.getPlanExercises(p.id);
   }));
 
-  const planCard = (p, following) => {
-    const peIds = planExMap[p.id].map(x => x.exerciseId);
+  const planCard = (p) => {
+    const peIds = (planExMap[p.id] || []).map(x => x.exerciseId);
     const exList = peIds.map(id => exercises.find(e => e.id === id)).filter(Boolean);
     return `
       <div class="card card-padded plan-card">
@@ -260,27 +259,21 @@ async function renderMyPlans() {
           ${exList.length > 3 ? `<div style="font-size:var(--text-xs);color:var(--gray-400)">+${exList.length - 3} more</div>` : ''}
           ${exList.length === 0 ? `<div style="font-size:var(--text-xs);color:var(--gray-400)">No exercises added</div>` : ''}
         </div>
-        <div style="display:flex;gap:8px" class="mb-4">
+        <div style="display:flex;gap:8px">
           <span class="badge badge-blue">${p.difficulty || '—'}</span>
           <span class="badge badge-gray">${exList.length} exercises</span>
         </div>
-        <button class="btn ${following ? 'btn-danger' : 'btn-primary'} btn-sm btn-full ${following ? 'btn-unfollow' : 'btn-follow'}" data-id="${p.id}">${following ? 'Unfollow' : 'Follow Plan'}</button>
       </div>`;
   };
 
   v.innerHTML = `
     <div class="section-title">My Workout Plans</div>
-    ${myPlans.length ? `<div class="grid-3 mb-6">${myPlans.map(p => planCard(p, true)).join('')}</div>` : `<div class="card card-padded mb-6">${empty('assignment', 'No plans yet', 'Follow a plan from the list below')}</div>`}
-    ${otherPlans.length ? `<div class="section-title">Available Plans</div><div class="grid-3">${otherPlans.map(p => planCard(p, false)).join('')}</div>` : ''}
+    <p style="font-size:var(--text-sm);color:var(--gray-500);margin-bottom:20px">Plans assigned to you by your trainer.</p>
+    ${myPlans.length
+      ? `<div class="grid-3">${myPlans.map(p => planCard(p)).join('')}</div>`
+      : `<div class="card card-padded">${empty('assignment', 'No plans assigned yet', 'Your trainer will assign workout plans to you')}</div>`
+    }
   `;
-  $$('.btn-follow').forEach(b => b.onclick = async () => {
-    await DataService.followPlan(APP.user.id, parseInt(b.dataset.id));
-    showToast('Plan followed!'); renderMyPlans();
-  });
-  $$('.btn-unfollow').forEach(b => b.onclick = async () => {
-    await DataService.unfollowPlan(APP.user.id, parseInt(b.dataset.id));
-    showToast('Plan unfollowed'); renderMyPlans();
-  });
 }
 
 // ── PROGRESS ──
@@ -504,13 +497,15 @@ async function renderTrainerPlans() {
           ${exList.length > 3 ? `<div style="font-size:var(--text-xs);color:var(--gray-400)">+${exList.length - 3} more</div>` : ''}
         </div>
         <div style="display:flex;gap:8px;margin-top:auto" class="mt-4">
-          <button class="btn btn-secondary btn-sm edit-plan" data-id="${p.id}" style="flex:1"><span class="material-icons-round" style="font-size:16px">edit</span> Edit</button>
+          <button class="btn btn-primary btn-sm assign-plan" data-id="${p.id}" style="flex:1"><span class="material-icons-round" style="font-size:16px">person_add</span> Assign</button>
+          <button class="btn btn-secondary btn-sm edit-plan" data-id="${p.id}"><span class="material-icons-round" style="font-size:16px">edit</span></button>
           <button class="btn btn-ghost btn-sm del-plan" data-id="${p.id}" style="color:var(--danger-500)"><span class="material-icons-round" style="font-size:16px">delete</span></button>
         </div>
       </div>`;
     }).join('')}</div>` : empty('assignment', 'No plans', 'Create your first workout plan')}
   `;
   $('#create-plan').onclick = () => openPlanEditor(null);
+  $$('.assign-plan').forEach(b => b.onclick = async () => openAssignModal(await DataService.getPlan(parseInt(b.dataset.id))));
   $$('.edit-plan').forEach(b => b.onclick = async () => openPlanEditor(await DataService.getPlan(parseInt(b.dataset.id))));
   $$('.del-plan').forEach(b => b.onclick = () =>
     confirmDelete(async () => { await DataService.deletePlan(parseInt(b.dataset.id)); showToast('Deleted'); renderTrainerPlans(); })
@@ -556,7 +551,56 @@ async function openPlanEditor(plan) {
   }, 50);
 }
 
-async function renderTrainerProgress() {
+async function openAssignModal(plan) {
+  if (!plan) return;
+  // Get this trainer's members and their current plan assignments
+  const allMembers = await DataService.getMembers();
+  const members = allMembers.filter(m => m.trainerId === APP.user.id);
+
+  // For each member, find out if they already have this plan
+  const memberPlanLinks = await Promise.all(members.map(m => DataService.getMemberPlans(m.id)));
+  const assignedMemberIds = members
+    .filter((m, i) => memberPlanLinks[i].some(lnk => lnk.planId === plan.id))
+    .map(m => m.id);
+
+  openModal(
+    `Assign Plan: ${plan.goal}`,
+    members.length ? `
+      <p style="font-size:var(--text-sm);color:var(--gray-500);margin-bottom:16px">Select the members you want to assign this plan to.</p>
+      <div style="max-height:280px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:var(--radius-md);padding:8px">
+        ${members.map(m => `
+          <label style="display:flex;align-items:center;gap:12px;padding:8px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+            <input type="checkbox" class="assign-check" data-mid="${m.id}" ${assignedMemberIds.includes(m.id) ? 'checked' : ''} style="accent-color:var(--accent-600);width:16px;height:16px" />
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-100);color:var(--accent-700);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${initials(m.name)}</div>
+            <div><div style="font-weight:600;color:var(--gray-900);font-size:var(--text-sm)">${m.name}</div><div style="font-size:var(--text-xs);color:var(--gray-400)">${m.email || 'No email'}</div></div>
+          </label>`).join('')}
+      </div>` :
+      `<div style="padding:24px 0;text-align:center;color:var(--gray-400)">
+        <span class="material-icons-round" style="font-size:40px;margin-bottom:8px;display:block">group_off</span>
+        <p style="font-size:var(--text-sm)">No members assigned to you yet.</p>
+       </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>${members.length ? '<button class="btn btn-primary" id="assign-save"><span class="material-icons-round">save</span> Save Assignments</button>' : ''}`
+  );
+
+  setTimeout(() => {
+    const saveBtn = document.getElementById('assign-save');
+    if (!saveBtn) return;
+    saveBtn.onclick = async () => {
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+      const checks = [...$$('.assign-check')];
+      await Promise.all(checks.map(async chk => {
+        const mid = parseInt(chk.dataset.mid);
+        const wasAssigned = assignedMemberIds.includes(mid);
+        if (chk.checked && !wasAssigned) await DataService.followPlan(mid, plan.id);
+        if (!chk.checked && wasAssigned) await DataService.unfollowPlan(mid, plan.id);
+      }));
+      closeModal();
+      showToast('Assignments saved!');
+    };
+  }, 50);
+}
+
+
   const v = $('#view-trainer-progress');
   setLoading(v);
   const allMembers = await DataService.getMembers();
